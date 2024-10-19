@@ -1,16 +1,17 @@
-// WebGL starfield simulation with smooth twinkling, shooting stars, and parallax effect
+//preparación de variables globales para generar shaders, buffers, y estrellas
 var gl, program;
 var starCount = 500;
+//arrays para guardar los origenes de las estrellas, brillo, tamaño...
 var starVertices = [], starBrightness = [], starTargetBrightness = [], starSizes = [];
 var shootingStars = [], shootingStarFrequency = 1000, lastShootingStarTime = 0;
 
-// Initialize WebGL context
+//inicializar contexto webgl
 function getWebGLContext() {
     var canvas = document.getElementById("myCanvas");
-    return canvas.getContext("webgl2") || console.error("WebGL not available");
+    return canvas.getContext("webgl2") || console.error("WebGL no disponible");
 }
 
-// Initialize shaders
+//inicializar shaders
 function initShaders() {
     var vertexShader = gl.createShader(gl.VERTEX_SHADER);
     gl.shaderSource(vertexShader, document.getElementById("myVertexShader").text);
@@ -27,20 +28,20 @@ function initShaders() {
     gl.useProgram(program);
 }
 
-// Generate random star size with exponential distribution
+//generar distribución aleatoria de estrellas
 function getRandomStarSize() {
     const minSize = 0.01, maxSize = 2.0;
     return Math.pow(Math.random(), 1.5) * (maxSize - minSize) + minSize;
 }
 
-// Generate stars with random position, brightness, and size
+//generar estrellas con tamaño, posición y brillo aleatorios
 function generateStars(count) {
     starVertices = [], starBrightness = [], starTargetBrightness = [], starSizes = [];
     for (let i = 0; i < count; i++) {
         const x = (Math.random() * 2) - 1, y = (Math.random() * 2) - 1;
         starVertices.push(x, y);
 
-        const brightness = Math.random() * 0.5 + 0.5;
+        const brightness = Math.random() * 0.5 + 0.5; //brillo aleatorio entre 0.5 y 1
         starBrightness.push(brightness);
         starTargetBrightness.push(brightness);
 
@@ -48,7 +49,7 @@ function generateStars(count) {
     }
 }
 
-// Initialize buffers for stars
+//inicializar buffers para las estrellas
 function initBuffers() {
     const starBuffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, starBuffer);
@@ -67,17 +68,17 @@ function initBuffers() {
     gl.vertexAttribPointer(sizeLocation, 1, gl.FLOAT, false, 0, 0);
 }
 
-// Create a new shooting star
+//crear estrella fugaz: generar posición, dirección, duración y longitud de estela aleatorios
 function createShootingStar() {
     const x = (Math.random() * 2) - 1, y = (Math.random() * 2) - 1;
     const directionX = (Math.random() * 2 - 1) * 0.02;
     const directionY = (Math.random() * 2 - 1) * 0.02;
     const duration = Math.random() * 60 + 60;
-    const trailLength = Math.random() * 0.1 + 0.05;  // Trail length factor
+    const trailLength = Math.random() * 0.3 + 0.05;  
     shootingStars.push({ x, y, directionX, directionY, duration, frames: 0, trailLength });
 }
 
-// Update positions of shooting stars
+//actualizar la posición de las estrellas fugaces según la dirección y la duración de la estrella
 function updateShootingStars() {
     for (let i = shootingStars.length - 1; i >= 0; i--) {
         const star = shootingStars[i];
@@ -89,7 +90,7 @@ function updateShootingStars() {
     }
 }
 
-// Smooth twinkling by adjusting brightness towards target
+//efecto de parpadeo de las estrellas 
 function updateStarBrightness() {
     for (let i = 0; i < starCount; i++) {
         starBrightness[i] += (starTargetBrightness[i] - starBrightness[i]) * 0.02;
@@ -97,7 +98,7 @@ function updateStarBrightness() {
     }
 }
 
-// Update star positions for parallax effect
+//efecto de movimiento de las estrellas: velocidad varía según el tamaño de la estrella para simular proximidad
 function updateStarPositions() {
     for (let i = 0; i < starCount; i++) {
         const speed = starSizes[i] * 0.00015;
@@ -113,7 +114,7 @@ function updateStarPositions() {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(starVertices), gl.STATIC_DRAW);
 }
 
-// Draw stars with smooth twinkling and shooting stars with trails
+//dibujar estrellas y estrellas fugaces
 function drawStars() {
     gl.clear(gl.COLOR_BUFFER_BIT);
 
@@ -128,30 +129,28 @@ function drawStars() {
     drawShootingStars();
 }
 
-// Draw shooting stars and their trails with fading
+//dibujar estrellas fugaces: estela va disminuyendo en tamaño y brillo según disminuye la duración de la estrella fugaz
 function drawShootingStars() {
     for (const star of shootingStars) {
         gl.uniform1f(gl.getUniformLocation(program, "u_brightness"), 1.0);
 
-        // Set a larger size for the shooting star
-        gl.vertexAttrib1f(gl.getAttribLocation(program, "a_size"), 5.0); // Make shooting stars larger
+        //tamaño de las estrellas fugaces mayor que el de las estrellas normales para que destaquen
+        gl.vertexAttrib1f(gl.getAttribLocation(program, "a_size"), 5.0); 
 
-        // Draw the shooting star
         gl.vertexAttribPointer(gl.getAttribLocation(program, "a_position"), 2, gl.FLOAT, false, 0, 0);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([star.x, star.y]), gl.STATIC_DRAW);
         gl.drawArrays(gl.POINTS, 0, 1);
 
-        // Draw the trail with a fading effect
-        let trailBrightness = 0.8; // Start the trail bright
+        //efecto de estela
+        let trailBrightness = 0.8; 
         let trailX = star.x;
         let trailY = star.y;
         const trailLength = star.trailLength;
 
-        // Draw multiple trail segments with decreasing brightness
         for (let j = 0; j < 5; j++) {
-            trailX -= star.directionX * trailLength; // Adjust for trail length
+            trailX -= star.directionX * trailLength; 
             trailY -= star.directionY * trailLength;
-            trailBrightness -= 0.15; // Gradually reduce brightness
+            trailBrightness -= 0.15; 
 
             gl.uniform1f(gl.getUniformLocation(program, "u_brightness"), trailBrightness);
             gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([trailX, trailY]), gl.STATIC_DRAW);
@@ -160,7 +159,7 @@ function drawShootingStars() {
     }
 }
 
-// Main render loop
+//renderizado de la escena: tiene en cuenta la frecuencia a la que debe generar estrellas fugaces
 function drawScene(currentTime) {
     if (currentTime - lastShootingStarTime > (2000 - shootingStarFrequency)) {
         createShootingStar();
@@ -172,19 +171,19 @@ function drawScene(currentTime) {
     requestAnimationFrame(drawScene);
 }
 
-// Update star count based on slider
+//actualiza la cantidad de estrellas en el canvas según el valor del slider
 function updateStarCount() {
     starCount = parseInt(document.getElementById('starCount').value);
     generateStars(starCount);
     initBuffers();
 }
 
-// Update shooting star frequency based on slider
+//actualiza la frencuencia a la que aparecen estrellas fugaces según el valor del slider
 function updateShootingStarFrequency() {
     shootingStarFrequency = parseInt(document.getElementById('shootingStarFreq').value);
 }
 
-// Initialize WebGL
+//inicializar webgl
 function initWebGL() {
     gl = getWebGLContext();
     if (!gl) return;
@@ -199,7 +198,7 @@ function initWebGL() {
     requestAnimationFrame(drawScene);
 }
 
-// Set canvas size based on viewport dimensions
+//ajustar tamaño del canvas según el tamaño de la ventana
 function resizeCanvas() {
     const canvas = document.getElementById("myCanvas");
     const size = Math.min(window.innerWidth * 0.8, window.innerHeight * 0.8);
@@ -207,6 +206,6 @@ function resizeCanvas() {
     canvas.height = size;
 }
 
-resizeCanvas();
 
+resizeCanvas();
 initWebGL();
