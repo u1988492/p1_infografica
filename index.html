@@ -37,15 +37,15 @@
             display: flex;
             align-items: center; 
             gap: 20px; 
-            padding: 20px;
+            padding: 30px;
         }
 
         canvas {
             border: 10px solid rgba(255, 255, 255, 0.7);
             border-radius: 8px;
             box-shadow: 0px 0px 10px black;
-            width: 80vw; 
-            height: 80vw; 
+            width: 70vw; 
+            height: 70vw; 
             max-height: 90vh; 
         }
 
@@ -91,11 +91,19 @@
     <!--FRAGMENT SHADER-->
     <script id="myFragmentShader" type="x-shader/x-fragment">
         precision mediump float;
-        //uniform de brillo para modificar con codigo
+        //uniform de brillo y color para modificar con codigo
         uniform float u_brightness;
+        uniform vec3 u_planetColor;
+        uniform int u_isPlanet;
+
         void main() {
-            //estrellas blancas con brillo variable
-            gl_FragColor = vec4(1.0, 1.0, 1.0, u_brightness);
+            if (u_isPlanet == 1) {
+                // Use planet's color
+                gl_FragColor = vec4(u_planetColor, 1.0);
+            } else {
+                // Stars and shooting stars will remain white with varying brightness
+                gl_FragColor = vec4(1.0, 1.0, 1.0, u_brightness);
+            }
         }
     </script>
     
